@@ -1,8 +1,8 @@
 <?php
-// Unduh berkas arsip besar (tar / tar.gz) lewat PHP.
-// Dipakai agar unduhan tidak bergantung pada jenis berkas yang disajikan server statis.
+// Unduh arsip kompresi pos-grand.tar.gz lewat PHP.
+// Arsip ini HANYA dipakai skrip update otomatis di server Pi (satu berkas untuk diunduh).
+// Untuk mengambil berkas proyek satu per satu, pakai files.php / file.php (tanpa kompresi).
 $ALLOW = array(
-    'pos-grand.tar'    => 'application/x-tar',
     'pos-grand.tar.gz' => 'application/gzip',
 );
 $f    = isset($_GET['f']) ? basename((string) $_GET['f']) : '';

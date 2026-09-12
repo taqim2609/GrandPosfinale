@@ -1,10 +1,11 @@
 <?php
-// Daftar seluruh berkas proyek di dalam arsip — bisa diunduh SATU PER SATU.
-require __DIR__ . '/tarlib.php';
+// Daftar seluruh berkas proyek dari folder `project/` (tanpa kompresi/arsip) —
+// setiap berkas bisa diunduh SATU PER SATU atau dibaca langsung.
+require __DIR__ . '/lib.php';
 
-$TAR     = __DIR__ . '/pos-grand.tar';
+$DIR     = gak_project_dir();
+$entries = gak_project_scan($DIR);
 $GZ      = __DIR__ . '/pos-grand.tar.gz';
-$entries = is_file($TAR) ? gak_tar_entries($TAR) : array();
 
 $ver  = '';
 $upd  = '';
@@ -61,7 +62,7 @@ function stat_of($path)
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Daftar Berkas Proyek — Grand Aceh Kuliner POS</title>
+<title>Berkas Proyek — Grand Aceh Kuliner POS</title>
 <style>
   :root { color-scheme: light; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -135,23 +136,25 @@ function stat_of($path)
 <div class="wrap">
 
   <div class="card">
-    <h1>Daftar Berkas Proyek</h1>
+    <h1>Berkas Proyek (tanpa kompresi)</h1>
     <div class="sub">
-      Semua berkas yang ada di dalam arsip rilis, bisa diunduh <b>satu per satu</b>
-      (mis. <code class="k">backend/server.py</code> saja) tanpa mengunduh seluruh arsip.
-      Isinya sama persis dengan yang ada di <code class="k">pos-grand.tar.gz</code>.
+      Ini folder proyek apa adanya — <b><?= count($entries) ?> berkas</b> dari
+      <code class="k">project/</code>, bisa diunduh <b>satu per satu</b>
+      (mis. <code class="k">backend/server.py</code> saja) atau dibaca langsung di peramban.
+      Tidak perlu mengunduh arsip apa pun.
     </div>
     <?php if ($ver !== ''): ?>
       <div class="ver">versi: <?= h($ver) ?><?= $upd !== '' ? ' — ' . h($upd) : '' ?></div>
     <?php endif; ?>
     <div class="btns">
-      <a class="btn" href="archive.php?f=pos-grand.tar.gz" download>⬇ Unduh semua (pos-grand.tar.gz <?= h(stat_of($GZ)) ?>)</a>
-      <a class="btn ghost" href="archive.php?f=pos-grand.tar" download>⬇ Unduh semua (pos-grand.tar <?= h(stat_of($TAR)) ?>)</a>
+      <?php if (is_file($GZ)): ?>
+        <a class="btn ghost" href="archive.php?f=pos-grand.tar.gz" download>⬇ pos-grand.tar.gz (<?= h(stat_of($GZ)) ?>) — untuk update otomatis server</a>
+      <?php endif; ?>
       <a class="btn ghost" href="index.php">← Kembali ke Update Center</a>
     </div>
     <div class="sub" style="margin-top:10px">
-      Total <b><?= count($entries) ?></b> berkas · <b><?= h(gak_size_h($total)) ?></b> isi berkas.
-      Klik nama berkas untuk membaca isinya (berkas teks), atau tombol untuk mengunduh.
+      Total isi berkas: <b><?= h(gak_size_h($total)) ?></b>.
+      Klik nama berkas untuk membacanya (berkas teks), atau tombol untuk mengunduh.
     </div>
   </div>
 
@@ -163,8 +166,9 @@ function stat_of($path)
 
     <?php if (!$entries): ?>
       <div class="empty">
-        Arsip <code class="k">pos-grand.tar</code> belum tersedia di server ini, jadi daftar berkas belum bisa ditampilkan.
-        Silakan unduh arsip lengkapnya di halaman Update Center.
+        Folder <code class="k">project/</code> belum ada di server ini, jadi daftar berkas belum bisa
+        ditampilkan. Jalankan skrip rilis di komputer pengembang
+        (<code class="k">./build-update-archive.sh</code>) lalu terbitkan ulang Update Center.
       </div>
     <?php endif; ?>
 
@@ -186,7 +190,7 @@ function stat_of($path)
             <td class="s"><?= h(gak_size_h($e['size'])) ?></td>
             <td class="a">
               <a class="dl" href="file.php?f=<?= h(rawurlencode($n)) ?>" download>Unduh</a>
-              <?php if (gak_tar_is_text($n)): ?>
+              <?php if (gak_is_text($n)): ?>
                 <a class="vw" href="file.php?f=<?= h(rawurlencode($n)) ?>&amp;inline=1" target="_blank" rel="noopener">Lihat</a>
               <?php endif; ?>
             </td>
