@@ -1,0 +1,107 @@
+import "@/App.css";
+import { useEffect } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Toaster } from "sonner";
+import { checkOtaUpdate } from "@/lib/ota";
+import { installDiag } from "@/lib/diag";
+import { feat } from "@/lib/features";
+import { loadPlatform } from "@/lib/platform";
+import { AuthProvider } from "@/context/AuthContext";
+import { OfflineProvider } from "@/context/OfflineContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import Layout from "@/components/Layout";
+import OtaIndicator from "@/components/OtaIndicator";
+import Login from "@/pages/Login";
+import POS from "@/pages/POS";
+import Shift from "@/pages/Shift";
+import Dashboard from "@/pages/Dashboard";
+import Products from "@/pages/Products";
+import Categories from "@/pages/Categories";
+import Tables from "@/pages/Tables";
+import Orders from "@/pages/Orders";
+import VoidRefund from "@/pages/VoidRefund";
+import UsersPage from "@/pages/Users";
+import Inventory from "@/pages/Inventory";
+import Cash from "@/pages/Cash";
+import SettingsAI from "@/pages/SettingsAI";
+import SettingsData from "@/pages/SettingsData";
+import Settings from "@/pages/Settings";
+import WhatsApp from "@/pages/WhatsApp";
+import DeviceSettings from "@/pages/DeviceSettings";
+import Catalog from "@/pages/Catalog";
+import Ingredients from "@/pages/Ingredients";
+import AssistantAI from "@/pages/AssistantAI";
+import Reports from "@/pages/Reports";
+import Members from "@/pages/Members";
+import Reservations from "@/pages/Reservations";
+import VendorSettlement from "@/pages/VendorSettlement";
+import PromosCoupons from "@/pages/PromosCoupons";
+
+// roles = role dasar yang boleh; mod = modul izin dinamis (RBAC) bila role dasar belum cukup.
+const wrap = (el, roles, mod) => (
+  <ProtectedRoute roles={roles} mod={mod}>
+    <Layout>{el}</Layout>
+  </ProtectedRoute>
+);
+
+function App() {
+  useEffect(() => {
+    // Branding platform (nama/logo/warna tema) tanpa perlu deploy.
+    loadPlatform().catch(() => {});
+    // ota.autocheck bisa dimatikan dari Pengaturan → Fitur & Integrasi.
+    if (feat("ota.autocheck")) checkOtaUpdate();
+    installDiag();
+    // Cek ulang OTA setiap kali app kembali aktif (Android: kembali dari background),
+    // supaya update terpasang tanpa perlu restart penuh.
+    const onVis = () => { if (document.visibilityState === "visible" && feat("ota.autocheck")) checkOtaUpdate(); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, []);
+  return (
+    <div className="App">
+      <AuthProvider>
+        <OfflineProvider>
+          <Toaster position="top-center" richColors />
+          <OtaIndicator />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/pos" element={wrap(<POS />, ["admin", "kasir"], "pos")} />
+              <Route path="/shift" element={wrap(<Shift />, ["admin", "kasir"], "shift")} />
+              <Route path="/cash" element={wrap(<Cash />, ["admin", "kasir"], "pengeluaran")} />
+              <Route path="/dashboard" element={wrap(<Dashboard />, ["admin", "kasir", "input"], "dashboard")} />
+              <Route path="/products" element={wrap(<Products />, ["admin", "input"], "produk")} />
+              <Route path="/inventory" element={wrap(<Inventory />, ["admin", "input"], "produk")} />
+              <Route path="/categories" element={wrap(<Categories />, ["admin", "input"], "produk")} />
+              <Route path="/catalog" element={wrap(<Catalog />, ["admin", "input"], "produk")} />
+              <Route path="/ingredients" element={wrap(<Ingredients />, ["admin", "input"], ["produk", "belanja_bahan", "opname_bahan"])} />
+              <Route path="/laporan" element={wrap(<Reports />, ["admin", "kasir"], "laporan")} />
+              <Route path="/members" element={wrap(<Members />, ["admin"], "member")} />
+              <Route path="/promos" element={<Navigate to="/promo-kupon" replace />} />
+              <Route path="/promo-kupon" element={wrap(<PromosCoupons />, ["admin"], "promo")} />
+              <Route path="/reservations" element={wrap(<Reservations />, ["admin", "kasir"], "reservasi")} />
+              <Route path="/settlement" element={wrap(<VendorSettlement />, ["admin", "kasir"], "settlement")} />
+              <Route path="/recipes" element={<Navigate to="/catalog?tab=resep" replace />} />
+              <Route path="/coupons" element={<Navigate to="/promo-kupon?tab=kupon" replace />} />
+              <Route path="/tanya-ai" element={<Navigate to="/asisten-ai" replace />} />
+              <Route path="/asisten-ai" element={wrap(<AssistantAI />, ["admin", "kasir"], "ai")} />
+              <Route path="/tables" element={wrap(<Tables />, ["admin"], "meja")} />
+              <Route path="/orders" element={wrap(<Orders />, ["admin"], "transaksi")} />
+              <Route path="/void" element={wrap(<VoidRefund />, ["admin", "kasir"], "void")} />
+              <Route path="/users" element={wrap(<UsersPage />, ["admin"], "pengguna")} />
+              <Route path="/settings-ai" element={wrap(<SettingsAI />, ["admin"], "pengaturan")} />
+              <Route path="/settings-data" element={wrap(<SettingsData />, ["admin"], "pengaturan")} />
+              <Route path="/settings" element={wrap(<Settings />, ["admin"], ["pengaturan", "pengguna", "role_izin"])} />
+              <Route path="/whatsapp" element={wrap(<WhatsApp />, ["admin"], "whatsapp")} />
+              <Route path="/device" element={wrap(<DeviceSettings />)} />
+              <Route path="/" element={<Navigate to="/pos" replace />} />
+              <Route path="*" element={<Navigate to="/pos" replace />} />
+            </Routes>
+          </BrowserRouter>
+        </OfflineProvider>
+      </AuthProvider>
+    </div>
+  );
+}
+
+export default App;
